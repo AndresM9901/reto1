@@ -147,9 +147,9 @@ REST_FRAMEWORK = {
     ),
 }
 
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:4200",# Ajusta según sea necesario para permitir la URL del frontend
-# ]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:4200",# Ajusta según sea necesario para permitir la URL del frontend
+]
 
 # Configuración de JWT
 from datetime import timedelta
@@ -181,3 +181,21 @@ ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3
 ACCOUNT_EMAIL_CONFIRMATION_HMAC = True
 
 CORS_ORIGIN_ALLOW_ALL = True
+
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'handlers': {
+#         'console': {
+#             'level': 'DEBUG',
+#             'class': 'logging.StreamHandler',
+#         },
+#     },
+#     'loggers': {
+#         'django': {
+#             'handlers': ['console'],
+#             'level': 'DEBUG',
+#             'propagate': True,
+#         },
+#     },
+# }
