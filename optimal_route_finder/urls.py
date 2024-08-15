@@ -28,10 +28,10 @@ urlpatterns = [
     path('accounts/', include('allauth.urls')),
     path('api/', include('data_loader.urls')),
     path('api/auth/', include('dj_rest_auth.urls')),
-    path('api/auth/registration/', include('dj_rest_auth.registration.urls')),
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    re_path(r'^registration/account-confirm-email/(?P<key>[\s\d\w().+-_\',:&]+)/$', CustomConfirmEmailView.as_view(), name='account_confirm_email'),
+    # path('api/auth/registration/', include('dj_rest_auth.registration.urls')),
+    # path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    # path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    # re_path(r'^registration/account-confirm-email/(?P<key>[\s\d\w().+-_\',:&]+)/$', confirm_email, name='account_confirm_email'),
 ]
 
 schema_view = get_schema_view(

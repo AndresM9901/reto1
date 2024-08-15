@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Confirmación de Correo Electrónico</title>
+</head>
+<body>
+    <h1>Hola {{ user.email }}</h1>
+    <p>Gracias por registrarte en nuestro sitio. Para completar tu registro, por favor confirma tu dirección de correo electrónico haciendo clic en el siguiente enlace:</p>
+    <p><a href="{{ confirmation_link }}">Confirmar mi dirección de correo electrónico</a></p>
+    <p>Si no te has registrado en nuestro sitio, por favor ignora este correo electrónico.</p>
+    <p>Saludos,<br>El equipo de [Nombre de tu sitio]</p>
+</body>
+</html>

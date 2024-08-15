@@ -1,19 +1,27 @@
 from .models import *
 from .serializers import *
-from allauth.account.views import ConfirmEmailView
+from .utils.graph_algorithms import get_graph, dijkstra
 from allauth.account.models import EmailConfirmation
-from django.contrib.auth import get_user_model
-from django.http import Http404, JsonResponse
+from allauth.account.views import ConfirmEmailView
+from django.contrib.auth import get_user_model, authenticate
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
 from django.db import transaction
+from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render, get_object_or_404
+from django.template.loader import render_to_string
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, generics, permissions
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.decorators import action, api_view
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .utils.graph_algorithms import get_graph, dijkstra
 import requests
 
 # Create your views here.
@@ -25,9 +33,9 @@ class ConexionViewSet(viewsets.ModelViewSet):
     queryset = Conexion.objects.all()
     serializer_class = ConexionSerializer
 
-class UsuarioViewSet(viewsets.ModelViewSet):
-    queryset = Usuario.objects.all()
-    serializer_class = UsuarioSerializer
+# class UsuarioViewSet(viewsets.ModelViewSet):
+#     queryset = Usuario.objects.all()
+#     serializer_class = UsuarioSerializer
 
 class SessionUsuarioViewSet(viewsets.ModelViewSet):
     queryset = SessionUsuario.objects.all()
@@ -145,3 +153,91 @@ class CustomConfirmEmailView(ConfirmEmailView):
 # class RegistrarUsuario(APIView):
 #     def post(self, request):
 #         if request.method == "POST":
+
+
+class UserRegistrationView(generics.CreateAPIView):
+    queryset = Usuario.objects.all()
+    serializer_class = CustomUserSerializer
+    permission_classes = [AllowAny]
+
+    def perform_create(self, serializer):
+        ip_address = self.request.META.get('REMOTE_ADDR')
+        user = serializer.save(ip_address=ip_address)
+        print(user.verification_key)
+        # confirmation_link = self.request.build_absolute_url(reverse('verify_email', args=[uid, token]))
+        confirmation_link = self.request.build_absolute_uri(reverse('verify_email', args=[user.verification_key]))
+
+        subject = 'Confirma tu correo electrónico'
+        message = render_to_string('email/confirmation_email.html', {
+            'user': user,
+            'confirmation_link': confirmation_link
+        })
+        send_mail(subject, message, None, [user.email])
+    
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        return Response({"message": "Usuario registrado correctamente"}, status=status.HTTP_201_CREATED)
+    
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        user = self.user
+        print(user.email_confirmado)
+
+        if not user.email_confirmado:
+            raise serializers.ValidationError({"detail": "Correo electrónico sin verificar. Por favor, verifica tu correo primero"}, code=status.HTTP_403_FORBIDDEN)
+
+        return data
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+    
+class CustomTokenRefreshView(TokenRefreshView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        return response
+    
+def verify_email(request, verification_key):
+    user = get_object_or_404(Usuario, verification_key=verification_key)
+
+    if not user.email_confirmado:
+        user.email_confirmado = True
+        user.verification_key = None
+        user.save()
+        return JsonResponse({"message": "Correo ha sido confirmado correctamente"}, status=status.HTTP_200_OK)
+    
+    else:
+        return JsonResponse({"message": "El correo ya ha sido confirmado"})
+
+@csrf_exempt   
+def login(request):
+    email = request.POST.get('email')
+    password = request.POST.get('password')
+
+    user = authenticate(email=email, password=password)
+
+    if user is None:
+        return JsonResponse({"message": "Cuenta no activa con las credenciales dadas"}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    if not user.email_confirmado:
+        return JsonResponse({"message": "Correo no confirmado"}, status=status.HTTP_401_UNAUTHORIZED)
+
+    current_ip = request.META.get('REMOTE_ADDR')
+    if user.ip_address and user.ip_address != current_ip:
+        user.ip_address = current_ip
+        user.session_date = timezone.now()
+        user.save()
+    
+    refresh = RefreshToken.for_user(user)
+    access_token = str(refresh.access_token)
+
+    return JsonResponse({
+        "user": {
+            "email": user.email,
+            "ip_address": user.ip_address,
+            "session_date": user.session_date
+        },
+        "access": f'Bearer {access_token}'
+    })

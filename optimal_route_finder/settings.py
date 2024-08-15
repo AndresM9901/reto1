@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'drf_yasg',
     'rest_framework.authtoken',
     'rest_framework',
+    'rest_framework_simplejwt',
 ]
 
 MIDDLEWARE = [
@@ -159,6 +160,13 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'AUTH_HEADER_TYPES': ('Bearer',),
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'VERIFYING_KEY': None,
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'AUTH_TOKEN_CLASSES': ('access',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
 }
 
 # Configuración de email (ajusta según sea necesario)
@@ -172,6 +180,7 @@ AUTHENTICATION_BACKENDS = (
 REST_USE_JWT = True
 
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
@@ -181,6 +190,8 @@ ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3
 ACCOUNT_EMAIL_CONFIRMATION_HMAC = True
 
 CORS_ORIGIN_ALLOW_ALL = True
+
+AUTH_USER_MODEL = 'data_loader.Usuario'
 
 # LOGGING = {
 #     'version': 1,
