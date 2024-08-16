@@ -3,9 +3,10 @@ from .serializers import *
 from .utils.graph_algorithms import get_graph, dijkstra
 from allauth.account.models import EmailConfirmation
 from allauth.account.views import ConfirmEmailView
+from django.conf import settings
 from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.tokens import default_token_generator
-from django.core.mail import send_mail
+from django.core.mail import send_mail, EmailMessage
 from django.db import transaction
 from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render, get_object_or_404
@@ -22,6 +23,7 @@ from rest_framework.decorators import action, api_view
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+import datetime
 import requests
 
 # Create your views here.
@@ -172,7 +174,21 @@ class UserRegistrationView(generics.CreateAPIView):
             'user': user,
             'confirmation_link': confirmation_link
         })
-        send_mail(subject, message, None, [user.email])
+        destinatario = user.email
+        mensaje = f"""
+					<h1 style='color:blue;'>Data loader</h1>
+					<p>Confirma tu correo</p>
+					<a href='{confirmation_link}'>Confirmar</a>
+					"""
+        """
+        try:
+            msg = EmailMessage('Verificar Correo', mensaje, settings.EMAIL_HOST_USER, [destinatario])
+            msg.content_subtype = 'html'
+            msg.send()
+        except Exception as e:
+            print(f'error: {e}')
+        """
+        send_mail(subject, message, settings.EMAIL_HOST_USER, [user.email])
     
     def create(self, request, *args, **kwargs):
         response = super().create(request, *args, **kwargs)
@@ -227,8 +243,10 @@ def login(request):
     current_ip = request.META.get('REMOTE_ADDR')
     if user.ip_address and user.ip_address != current_ip:
         user.ip_address = current_ip
-        user.session_date = timezone.now()
+        user.session_date = datetime.datetime.now()
         user.save()
+    user.session_date = datetime.datetime.now()
+    user.save()
     
     refresh = RefreshToken.for_user(user)
     access_token = str(refresh.access_token)

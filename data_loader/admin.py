@@ -7,8 +7,12 @@ from .models import *
 class ConexionAdmin(admin.ModelAdmin):
     list_display = ['ubicacion1', 'ubicacion2', 'peso']
 
+@admin.register(Usuario)
+class UsuarioAdmin(admin.ModelAdmin):
+    list_display = ['email', 'session_date']
+
 admin.site.register(Ubicacion)
-admin.site.register(Usuario)
+# admin.site.register(Usuario)
 admin.site.register(SessionUsuario)
 admin.site.register(Ruta)
 admin.site.register(RutaUbicacion)
